@@ -24,21 +24,46 @@ function gotFile(file) {
     // todo: なんとかしてリサイズする
      img = img_t;//pixels//p5.Image(300,400,img_t)//.resize(300,300)
 
-     //image(img, 0, 0, img.width, img.height);
-     //loadPixels()
+     image(img, 0, 0, img.width, img.height);
+     loadPixels()
+     for(let i = 0; i < pixels.length; i += 4){
+       colst = color2str(pixels[i],pixels[i+1],pixels[i+2])
+       // colstが既存Clusterにある？
+       if(colorClusters.any(function(cl){
+         !cl.hasOwnProperty(colst))
+       })){
+         //無ければ新しく追加
+       }
+     }
+
   } else {
     println('Not an image file!');
   }
 }
+var colorClusters = new Array()
+
+function color2str(r,g,b){
+  return "#"+hex(r)+hex(g)+hex(b)
+}
 
 function draw() {
   //background(100);
-  //clear()
+  clear()
   // Draw the image onto the canvas
   if(img){
     //image(img, 0, 0, width*0.5, 0.5*img.height*width/img.width);
     image(img, 0, 0, img.width, img.height);
-
+    //drawCluster
+    colorClusters.forEach(function(cluster, i) {
+    	var count = img.width+10;
+    	for (let cl in cluster) {
+    		if (cluster.hasOwnProperty(cl)) {
+    			stroke(cl)
+    			line(count, count, i * 10, i * 10 + 10)
+          count++;
+    		}
+    	}
+    })
   }else{
     fill(255);
     noStroke();
