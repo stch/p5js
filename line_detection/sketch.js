@@ -23,80 +23,53 @@ function gotFile(file) {
 		// todo: なんとかしてリサイズする
 		img = img_t; //pixels//p5.Image(300,400,img_t)//.resize(300,300)
 
-		image(img, 0, 0, img.elt.width, img.elt.height);
+		image(img, 0, 0)//, img.elt.width, img.elt.height);
+		loadPixels()
     var image_width = img.elt.width * displayDensity()
     var pixel_width = c.width * displayDensity()
     var image_height = img.elt.height * displayDensity()
-		loadPixels()
+
+       var cluster = new Object()
+    //   cluster[colstr] = 0
+       colorClusters.push(cluster)
 		var pixcount = 0
-		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / 4 / img.width)
+		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / 4 / img.width+" d:"+displayDensity())
 		for (let l = 0; l < image_height; l++){
       console.log("count: "+pixcount)
 			for (let i = l * pixel_width*4; i < (l*pixel_width+ image_width)*4; i += 4) {
         pixcount++
 				//console.log("count "+i)
-				colstr = color2str(pixels[i], pixels[i + 1], pixels[i + 2])
-				if (colorClusters.some(function(cl) {return cl.hasOwnProperty(colstr)})) {
-					continue;
-				}
-        // クラスタ処理
-			  // colstを含むClusterを探す
-				// 隣接するclusterも含む、結果はincludesClにインデックスで保存
-				let includesCl = new Array()
-				colorClusters.forEach(function(cl, incl) {
-					// if (getNearestColors([pixels[i], pixels[i + 1], pixels[i + 2]]).some(function(col3) {
-					//         return cl.hasOwnProperty(colstr)
-					//     }))
-					if (isInTheCluster(cl, [pixels[i], pixels[i + 1], pixels[i + 2]])) {
-						includesCl.push(incl)
-					}
-				})
-				var iclst
-				if (includesCl.length == 0 || colorClusters.length == 0) {
-					//無ければ新しく追加
-					iclst = new Object();
-					iclst[colstr] = 0;
-					colorClusters.push(iclst)
-					//console.log("new col: "+colstr)
-				} else {
-					//console.log("match clust: "+includesCl +" , count: "+i)
-					// includesClに入っているクラスタを結合して、項目追加
-					iclst = colorClusters[includesCl.pop()]
-					colorClusters = [iclst,
-                  // includesClに入っていない項目をfilterする。ついでにclstの結合処理も実行
-                  colorClusters.filter(function(clst) {
-      							// 各クラスタの処理。clstがincludesClに入っているかチェック
-      							if (includesCl.some(function(cl) {
-      									return colorClusters[cl] == clst
-      								})) {
-      								console.log("merge clst: " + includesCl.length + ", all: " + colorClusters.length)
-      								// includeClに入っているものはiclstに追加してfalseを返す
-      								//clst.forEach(function(colst) {
-      								for (let colst in clst) {
-      									iclst[colst] = clst[colst]
-      								}
-      								//})
-      								return false
-      							} else {
-      								// 入っていないものはそのままtureを返す
-      								return true
-      							}
-    						  })
-                ]
-					//console.log("cl:"+clst)
-					if (iclst.hasOwnProperty(colstr)) {
-						iclst[colstr]++
-					} else {
-						//  console.log("col: "+colstr)
-						iclst[colstr] = 0
-					}
-				}
-			}
-	}
-	console.log("clustering completed: " + colorClusters.length + ", pixx:" + pixcount)
-} else {
-	println('Not an image file!');
-}
+				 colstr = color2str(pixels[i], pixels[i + 1], pixels[i + 2])
+				// if (!colorClusters.some(function(cl) {
+        //   if(cl.hasOwnProperty(colstr)){
+        //     cl[colstr]++
+        //     return true
+        //   }
+        //   return false
+        // })) {
+        //   var cluster = new Object()
+        //   cluster[colstr] = 0
+        //   colorClusters.push(cluster)
+        //}
+        var excluded = true
+        for(let cl of colorClusters){
+          if(isInTheCluster(cl,str2col3(colstr))){
+            cl[colstr]++
+            excluded = false
+            break
+          }
+        }
+        if(excluded){
+          var cluster = new Object()
+          cluster[colstr]=1
+          colorClusters.push(cluster)
+        }
+      }
+    }
+  } else {
+  	println('Not an image file!');
+  }
+  console.log("got finish."+colorClusters.length)
 }
 var colorClusters = new Array()
 
@@ -114,9 +87,9 @@ function str2col3(str) {
 
 function getNearestColors(col3) {
 	var arr = new Array()
-	for (let i = (col3[0] > 0 ? col3[0] - 1 : 0); i <= col3[0] + 1 || i <= 255; i++) {
-		for (let j = (col3[1] > 0 ? col3[1] - 1 : 0); j <= col3[1] + 1 || j <= 255; j++) {
-			for (let k = (col3[2] > 0 ? col3[2] - 1 : 0); k <= col3[2] + 1 || k <= 255; k++) {
+	for (let i = (col3[0] > 0 ? col3[0] - 1 : 0); i <= col3[0] + 1 && i <= 255; i++) {
+		for (let j = (col3[1] > 0 ? col3[1] - 1 : 0); j <= col3[1] + 1 && j <= 255; j++) {
+			for (let k = (col3[2] > 0 ? col3[2] - 1 : 0); k <= col3[2] + 1 && k <= 255; k++) {
 				arr.push([i, j, k])
 			}
 		}
@@ -133,11 +106,72 @@ function isInSameCluster(col3a, col3b) {
 }
 
 function isInTheCluster(cl, col3) {
-	for (let col in cl) {
-		if (isInSameCluster(str2col3(col), col3)) return true
-	}
-	return false
+	// for (let col in cl) {
+	// 	if (isInSameCluster(str2col3(col), col3)) return true
+	// }
+  return getNearestColors(col3).some(function(col){return cl.hasOwnProperty(col32str(col))})
+	//return false
 }
+/*
+function clusterize(){
+  // クラスタ処理
+  // colstを含むClusterを探す
+  // 隣接するclusterも含む、結果はincludesClにインデックスで保存
+  let includesCl = new Array()
+  colorClusters.forEach(function(cl, incl) {
+    // if (getNearestColors([pixels[i], pixels[i + 1], pixels[i + 2]]).some(function(col3) {
+    //         return cl.hasOwnProperty(colstr)
+    //     }))
+    if (isInTheCluster(cl, [pixels[i], pixels[i + 1], pixels[i + 2]])) {
+      includesCl.push(incl)
+    }
+  })
+  var iclst
+  if (includesCl.length == 0 || colorClusters.length == 0) {
+    //無ければ新しく追加
+    iclst = new Object();
+    iclst[colstr] = 0;
+    colorClusters.push(iclst)
+    //console.log("new col: "+colstr)
+  } else {
+    //console.log("match clust: "+includesCl +" , count: "+i)
+    // includesClに入っているクラスタを結合して、項目追加
+    iclst = colorClusters[includesCl.pop()]
+    colorClusters = [iclst,
+            // includesClに入っていない項目をfilterする。ついでにclstの結合処理も実行
+            colorClusters.filter(function(clst) {
+              // 各クラスタの処理。clstがincludesClに入っているかチェック
+              if (includesCl.some(function(cl) {
+                  return colorClusters[cl] == clst
+                })) {
+                console.log("merge clst: " + includesCl.length + ", all: " + colorClusters.length)
+                // includeClに入っているものはiclstに追加してfalseを返す
+                //clst.forEach(function(colst) {
+                for (let colst in clst) {
+                  iclst[colst] = clst[colst]
+                }
+                //})
+                return false
+              } else {
+                // 入っていないものはそのままtureを返す
+                return true
+              }
+            })
+          ]
+    //console.log("cl:"+clst)
+    if (iclst.hasOwnProperty(colstr)) {
+      iclst[colstr]++
+    } else {
+      //  console.log("col: "+colstr)
+      iclst[colstr] = 0
+    }
+  }
+}
+}
+console.log("clustering completed: " + colorClusters.length + ", pixx:" + pixcount)
+
+}
+*/
 
 function draw() {
 	//background(100);
