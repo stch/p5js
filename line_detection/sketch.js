@@ -25,12 +25,11 @@ function gotFile(file) {
 
 		image(img, 0, 0)//, img.elt.width, img.elt.height);
 		loadPixels()
-    var image_width = img.elt.width * displayDensity()
     var pixel_width = c.width * displayDensity()
+    var image_width = img.elt.width * displayDensity()
     var image_height = img.elt.height * displayDensity()
 
        var cluster = new Object()
-    //   cluster[colstr] = 0
        colorClusters.push(cluster)
 		var pixcount = 0
 		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / 4 / img.width+" d:"+displayDensity())
@@ -38,32 +37,8 @@ function gotFile(file) {
       console.log("count: "+pixcount)
 			for (let i = l * pixel_width*4; i < (l*pixel_width+ image_width)*4; i += 4) {
         pixcount++
-				//console.log("count "+i)
 				 colstr = color2str(pixels[i], pixels[i + 1], pixels[i + 2])
-				// if (!colorClusters.some(function(cl) {
-        //   if(cl.hasOwnProperty(colstr)){
-        //     cl[colstr]++
-        //     return true
-        //   }
-        //   return false
-        // })) {
-        //   var cluster = new Object()
-        //   cluster[colstr] = 0
-        //   colorClusters.push(cluster)
-        //}
-        var excluded = true
-        for(let cl of colorClusters){
-          if(isInTheCluster(cl,str2col3(colstr))){
-            cl[colstr]++
-            excluded = false
-            break
-          }
-        }
-        if(excluded){
-          var cluster = new Object()
-          cluster[colstr]=1
-          colorClusters.push(cluster)
-        }
+         colorClusters[0][colstr] = (colorClusters[0][colstr]+1) | 0
       }
     }
   } else {
