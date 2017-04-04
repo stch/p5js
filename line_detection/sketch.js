@@ -41,6 +41,9 @@ function gotFile(file) {
          colorClusters[0][colstr] = (colorClusters[0][colstr]+1) | 0
       }
     }
+    while(need_clusterize && colorClusters.length > 0){
+      clusterize()
+    }
   } else {
   	println('Not an image file!');
   }
@@ -73,80 +76,55 @@ function getNearestColors(col3) {
 }
 
 function isInSameCluster(col3a, col3b) {
-	return 3 > col3a.reduce(function(previousValue, currentValue, index, array) {
+	return 64 > col3a.reduce(function(previousValue, currentValue, index, array) {
 		return previousValue + abs(currentValue - col3b[index])
-		//return max(previousValue,abs(currentValue - col3b[index]))
+    //return max(previousValue,abs(currentValue - col3b[index]))
 		//return min(previousValue, abs(currentValue - col3b[index]))
 	}, 0)
 }
 
 function isInTheCluster(cl, col3) {
-	// for (let col in cl) {
-	// 	if (isInSameCluster(str2col3(col), col3)) return true
-	// }
-  return getNearestColors(col3).some(function(col){return cl.hasOwnProperty(col32str(col))})
-	//return false
+	 for (let col in cl) {
+	 	if (isInSameCluster(str2col3(col), col3)) return true
+	 }
+	return false
+  //  return getNearestColors(col3).some(function(col){return cl.hasOwnProperty(col32str(col))})
 }
-/*
+
+var need_clusterize = true
 function clusterize(){
+  if(!need_clusterize){
+    return
+  }
   // クラスタ処理
   // colstを含むClusterを探す
   // 隣接するclusterも含む、結果はincludesClにインデックスで保存
-  let includesCl = new Array()
-  colorClusters.forEach(function(cl, incl) {
-    // if (getNearestColors([pixels[i], pixels[i + 1], pixels[i + 2]]).some(function(col3) {
-    //         return cl.hasOwnProperty(colstr)
-    //     }))
-    if (isInTheCluster(cl, [pixels[i], pixels[i + 1], pixels[i + 2]])) {
-      includesCl.push(incl)
+
+  // 先頭クラスタ=未処理、の先頭要素をとってくる
+  var cluster = new Object()
+  colstr = Object.keys(colorClusters[0])[0]
+  //cluster[colstr] = colorClusters[0][colstr]
+  //delete colorClusters[0][colstr]
+
+  console.log("before: "+Object.keys(colorClusters[0]).length)
+  Object.keys(colorClusters[0]).sort().forEach(function(colst){
+    if(isInSameCluster(str2col3(colstr),str2col3(colst))){
+      cluster[colst] = colorClusters[0][colst]
     }
   })
-  var iclst
-  if (includesCl.length == 0 || colorClusters.length == 0) {
-    //無ければ新しく追加
-    iclst = new Object();
-    iclst[colstr] = 0;
-    colorClusters.push(iclst)
-    //console.log("new col: "+colstr)
-  } else {
-    //console.log("match clust: "+includesCl +" , count: "+i)
-    // includesClに入っているクラスタを結合して、項目追加
-    iclst = colorClusters[includesCl.pop()]
-    colorClusters = [iclst,
-            // includesClに入っていない項目をfilterする。ついでにclstの結合処理も実行
-            colorClusters.filter(function(clst) {
-              // 各クラスタの処理。clstがincludesClに入っているかチェック
-              if (includesCl.some(function(cl) {
-                  return colorClusters[cl] == clst
-                })) {
-                console.log("merge clst: " + includesCl.length + ", all: " + colorClusters.length)
-                // includeClに入っているものはiclstに追加してfalseを返す
-                //clst.forEach(function(colst) {
-                for (let colst in clst) {
-                  iclst[colst] = clst[colst]
-                }
-                //})
-                return false
-              } else {
-                // 入っていないものはそのままtureを返す
-                return true
-              }
-            })
-          ]
-    //console.log("cl:"+clst)
-    if (iclst.hasOwnProperty(colstr)) {
-      iclst[colstr]++
-    } else {
-      //  console.log("col: "+colstr)
-      iclst[colstr] = 0
-    }
-  }
-}
-}
-console.log("clustering completed: " + colorClusters.length + ", pixx:" + pixcount)
+  Object.keys(cluster).forEach(function(colst){
+    delete colorClusters[0][colst]
+  })
+  console.log("after: "+Object.keys(colorClusters[0]).length+" + "+Object.keys(cluster).length)
 
+  if(Object.keys(colorClusters[0]).length == 0){
+    need_clusterize = false
+    colorClusters.shift()
+  }
+  colorClusters.push(cluster)
+  //console.log("clustering completed: " + colorClusters.length + ", pixx:" + pixcount)
 }
-*/
+
 
 function draw() {
 	//background(100);
@@ -161,11 +139,12 @@ function draw() {
 			for (let cl in cluster) {
 				if (cluster.hasOwnProperty(cl)) {
 					stroke(cl)
-					line(count, i * 6, count, i * 6 + 5)
+					line(count, i * 3, count, i * 3 + 2)
 					count++;
 				}
 			}
 		})
+    clusterize()
 	} else {
 		fill(255);
 		noStroke();
