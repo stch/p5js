@@ -20,10 +20,12 @@ function gotFile(file) {
 	if (file.type === 'image') {
 		// Create an image DOM element but don't show it
 		img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
-
+/*
 		// todo: なんとかしてリサイズする
 		//img_s = this; //pixels//p5.Image(300,400,img_s_t)//.resize(300,300)
 		image(img_s, 0, 0, c.width/2, c.height/2);
+    filter(POSTERIZE,8);
+
     var pixel_width = c.width * displayDensity()
     var image_width = 400*displayDensity()//img_s.elt.width * displayDensity()
     var image_height = 300*displayDensity()//img_s.elt.height * displayDensity()
@@ -45,6 +47,7 @@ function gotFile(file) {
     //while(need_clusterize && colorClusters.length > 0){
       clusterize_devider()
     //}
+    */
   } else {
   	println('Not an image file!');
   }
@@ -132,8 +135,10 @@ function clusterize_tipical_center(){
 
 // 各辺4分割、計64個仕様
 //まずは作業用のお部屋を準備
+var ldv = 2
+var dv = 2**ldv
 var divider = new Object()
-for(let i = 0; i<2**6; i++){
+for(let i = 0; i<2**(3*ldv); i++){
   divider[((i&0b110000)<<18)+((i&0b001100)<<12)+((i&0b000011)<<6)] = new Object()
 }
 function clusterize_devider(){
@@ -202,26 +207,104 @@ function near_cluster(){
 }
 */
 
+function drawCluster(){
+  colorClusters.forEach(function(cluster, i) {
+    var count = img_s.width + 10;
+    for (let cl in cluster) {
+      if (cluster.hasOwnProperty(cl)) {
+        stroke(cl)
+        line(count, i * 3, count, i * 3 + 2)
+        count++;
+      }
+    }
+  })
+  //clusterize_detail_top()
+  //clusterize()
+}
+
+function col42str(r, g, b, a) {
+	return hex(r, 2) + hex(g, 2) + hex(b, 2) + hex(a, 2)
+}
+function str2col4(str) {
+	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6), str.slice(6, 8)])
+}
+
+var ct
+function drawAccumH(dw){
+  console.log("B:drawAccumH dw:"+dw)
+
+  var pixel_width = c.width * displayDensity()
+  //dw *= displayDensity()
+  if(dw == 0) return
+
+  loadPixels()
+
+  var accum = new Array(dw)
+  var pixcount=0
+
+  for (let l = 0; l < dw; l++){
+    //console.log("count: "+pixcount)
+    accum[l] = new Object()
+    for (let i = l * pixel_width*4; i < (l*pixel_width+ dw)*4; i += 4) {
+      var colst = col42str(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3])
+      if(colst.slice(0,6) != "FFFFFF" && colst != "00000000"){
+      accum[l][colst] = accum[l][colst]+1 || 1
+    }
+      pixcount++
+    }
+  }
+  //console.log(accum)
+
+  if(!ct){
+    ct = createImage(dw,dw)
+  }
+  ct.loadPixels()
+
+  for (let l = 0; l < dw; l++){
+    var i = l*dw*4
+    ct.pixels.copyWithin(i+4,i,i+dw*4-4)
+    var col4 = str2col4(getClsMostFQCol(accum[l]))
+    //[ct.pixels[l*dw],ct.pixels[l*dw+1] ,ct.pixels[l*dw+2] ,ct.pixels[l*dw+3]] = getClsMostFQCol4(accum[l])
+    col4.forEach(function(c,ci){
+      ct.pixels[i+ci]=c
+    })
+
+  }
+/*/*
+  for (let l = 0; l < ct.pixels.length; l++){
+    ct.pixels[l] = (l+1)%4 ? 100:255
+  }
+*/
+  ct.updatePixels()
+  console.log("E:drawAccumH")
+}
+function getClsMostFQCol(cluster){
+  var colst = "888888FF"
+  Object.keys(cluster).forEach(function(key){
+    if(!cluster[colst] || cluster[key] > cluster[colst]){
+      colst = key
+    }
+  })
+  return colst
+}
+
 function draw() {
 	//background(100);
 	clear()
 	// Draw the image onto the canvas
 	if (img_s) {
-		//image(img_s, 0, 0, width*0.5, 0.5*img_s.height*width/img_s.width);
-		image(img_s, 0, 0, img_s.width, img_s.height);
-		//drawCluster
-		colorClusters.forEach(function(cluster, i) {
-			var count = img_s.width + 10;
-			for (let cl in cluster) {
-				if (cluster.hasOwnProperty(cl)) {
-					stroke(cl)
-					line(count, i * 3, count, i * 3 + 2)
-					count++;
-				}
-			}
-		})
-    clusterize_detail_top()
-    //clusterize()
+    var dw = sqrt(img_s.width**2+img_s.height**2)
+	   //image(img_s, 0, 0, width*0.5, 0.5*img_s.height*width/img_s.width);
+    push()
+    translate(dw/2,dw/2)
+    rotate(TWO_PI*(frameCount/360.0))
+		image(img_s, -img_s.width/2, -img_s.height/2)//, img_s.width, img_s.height);
+    filter(POSTERIZE,3);
+    pop()
+		//drawCluster()
+    drawAccumH(dw)
+
+    image(ct,dw,0)
 	} else {
 		fill(255);
 		noStroke();
@@ -229,4 +312,5 @@ function draw() {
 		textAlign(CENTER);
 		text('Drag an image file onto the canvas.', width / 2, height / 2);
 	}
+
 }
