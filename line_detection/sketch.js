@@ -88,7 +88,7 @@ function color2str(r, g, b) {
 }
 
 function col32str(col3) {
-	return "#" + hex(col3, 2)
+	return "#" + hex(col3, 2).join()
 }
 
 function str2col3(str) {
