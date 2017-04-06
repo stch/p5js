@@ -1,5 +1,7 @@
 var img_s
+var img_p
 var c
+var ready = false
 
 function setup() {
 	// create canvas
@@ -16,11 +18,12 @@ function setup() {
 }
 
 function gotFile(file) {
+	ready = false
 	// If it's an image file
 	if (file.type === 'image') {
 		// Create an image DOM element but don't show it
 		img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
-/*
+
 		// todo: なんとかしてリサイズする
 		//img_s = this; //pixels//p5.Image(300,400,img_s_t)//.resize(300,300)
 		image(img_s, 0, 0, c.width/2, c.height/2);
@@ -32,22 +35,41 @@ function gotFile(file) {
 
 		loadPixels()
 
-       var cluster = new Object()
-       colorClusters.push(cluster)
+		img_p = createImage(400,300)
+		img_p._pixelDensity = displayDensity()
+
+		console.log("dlen: "+img_p.pixels.length)
+		img_p.loadPixels()
+		console.log("dlen: "+img_p.pixels.length +" , "+img_p.imageData.data.length)
+    var cluster = new Object()
+    colorClusters.push(cluster)
 		var pixcount = 0
 		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / 4 /image_width+" d:"+displayDensity())
 		for (let l = 0; l < image_height; l++){
-      console.log("count: "+pixcount)
+			for(let i = 0; i < image_width*4; i++){
+				img_p.pixels[l*image_width+i] = pixels[l*pixel_width+i]
+			}
+			console.log("count: "+pixcount)
 			for (let i = l * pixel_width*4; i < (l*pixel_width+ image_width)*4; i += 4) {
-        pixcount++
-				 colstr = color2str(pixels[i], pixels[i + 1], pixels[i + 2])
-         colorClusters[0][colstr] = (colorClusters[0][colstr]+1) || 1
+				// img_p.pixels[pixcount*4+0] = pixels[i+0]
+				// img_p.pixels[pixcount*4+1] = pixels[i+1]
+				// img_p.pixels[pixcount*4+2] = pixels[i+2]
+				// img_p.pixels[pixcount*4+3] = pixels[i+3]
+				colstr = color2str(pixels[i], pixels[i + 1], pixels[i + 2])
+        colorClusters[0][colstr] = (colorClusters[0][colstr]+1) || 1
+				pixcount++
       }
     }
     //while(need_clusterize && colorClusters.length > 0){
       clusterize_devider()
     //}
-    */
+		var targetCluster = colorClusters[0]
+		console.log("dlen: "+img_p.pixels.length +" , "+img_p.imageData.data.length)
+
+		img_p.updatePixels()
+		console.log("dlen: "+img_p.pixels.length +" , "+img_p.imageData.data.length)
+
+		ready = true
   } else {
   	println('Not an image file!');
   }
@@ -207,13 +229,13 @@ function near_cluster(){
 }
 */
 
-function drawCluster(){
+function drawCluster(dw){
   colorClusters.forEach(function(cluster, i) {
-    var count = img_s.width + 10;
+    var count = dw + 10;
     for (let cl in cluster) {
       if (cluster.hasOwnProperty(cl)) {
         stroke(cl)
-        line(count, i * 3, count, i * 3 + 2)
+        line(i * 5,count,i * 5 + 4,  count )
         count++;
       }
     }
@@ -247,9 +269,9 @@ function drawAccumH(dw){
     accum[l] = new Object()
     for (let i = l * pixel_width*4; i < (l*pixel_width+ dw)*4; i += 4) {
       var colst = col42str(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3])
-      if(colst.slice(0,6) != "FFFFFF" && colst.slice(6,8) != "00"){
-      accum[l][colst] = accum[l][colst]+1 || 1
-    }
+      if(pixels[i + 3] != 0){
+	      accum[l][colst] = accum[l][colst]+1 || 1
+	    }
       pixcount++
     }
   }
@@ -257,6 +279,7 @@ function drawAccumH(dw){
 
   if(!ct){
     ct = createImage(dw,dw)
+		// 反映されないのか、、
 		ct._pixelDensity = displayDensity()
   }
   ct.loadPixels()
@@ -270,12 +293,8 @@ function drawAccumH(dw){
     })
 
   }
-/*/*
-  for (let l = 0; l < ct.pixels.length; l++){
-    ct.pixels[l] = (l+1)%4 ? 100:255
-  }
-*/
   ct.updatePixels()
+	image(ct,dw,0)
   console.log("E:drawAccumH")
 }
 function getClsMostFQCol(cluster){
@@ -307,19 +326,18 @@ function draw() {
 	//background(100);
 	clear()
 	// Draw the image onto the canvas
-	if (img_s) {
-    var dw = sqrt(img_s.width**2+img_s.height**2)
+	if (ready) {
+    var dw = sqrt(img_p.width**2+img_p.height**2)
 	   //image(img_s, 0, 0, width*0.5, 0.5*img_s.height*width/img_s.width);
     push()
     translate(dw/2,dw/2)
     rotate(TWO_PI*(frameCount/360.0))
-		image(img_s, -img_s.width/2, -img_s.height/2)//, img_s.width, img_s.height);
+		image(img_p, -img_p.width/2, -img_p.height/2)//,img_p.width*2, img_p.height*2);
     filter(POSTERIZE,3);
     pop()
-		//drawCluster()
-    drawAccumH(dw)
+		drawCluster(dw)
+    //drawAccumH(dw)
 
-    image(ct,dw,0)
 	} else {
 		fill(255);
 		noStroke();
