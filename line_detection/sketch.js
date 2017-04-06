@@ -223,7 +223,7 @@ function drawCluster(){
 }
 
 function col42str(r, g, b, a) {
-	return hex(r, 2) + hex(g, 2) + hex(b, 2) + hex(a, 2)
+	return hex(int(r), 2) + hex(int(g), 2) + hex(int(b), 2) + hex(int(a), 2)
 }
 function str2col4(str) {
 	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6), str.slice(6, 8)])
@@ -234,7 +234,7 @@ function drawAccumH(dw){
   console.log("B:drawAccumH dw:"+dw)
 
   var pixel_width = c.width * displayDensity()
-  //dw *= displayDensity()
+  dw *= displayDensity()
   if(dw == 0) return
 
   loadPixels()
@@ -247,7 +247,7 @@ function drawAccumH(dw){
     accum[l] = new Object()
     for (let i = l * pixel_width*4; i < (l*pixel_width+ dw)*4; i += 4) {
       var colst = col42str(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3])
-      if(colst.slice(0,6) != "FFFFFF" && colst != "00000000"){
+      if(colst.slice(0,6) != "FFFFFF" && colst.slice(6,8) != "00"){
       accum[l][colst] = accum[l][colst]+1 || 1
     }
       pixcount++
@@ -257,14 +257,14 @@ function drawAccumH(dw){
 
   if(!ct){
     ct = createImage(dw,dw)
+		ct._pixelDensity = displayDensity()
   }
   ct.loadPixels()
-
   for (let l = 0; l < dw; l++){
     var i = l*dw*4
     ct.pixels.copyWithin(i+4,i,i+dw*4-4)
-    var col4 = str2col4(getClsMostFQCol(accum[l]))
-    //[ct.pixels[l*dw],ct.pixels[l*dw+1] ,ct.pixels[l*dw+2] ,ct.pixels[l*dw+3]] = getClsMostFQCol4(accum[l])
+//    var col4 = str2col4(getClsMostFQCol(accum[l]))
+		var col4 = str2col4(getClsColComp(accum[l]))
     col4.forEach(function(c,ci){
       ct.pixels[i+ci]=c
     })
@@ -286,6 +286,21 @@ function getClsMostFQCol(cluster){
     }
   })
   return colst
+}
+
+function getClsColComp(cluster){
+	var base = 0.0
+  var col = 	Object.keys(cluster).reduce(function(previousValue, currentValue, index, array){
+		//if(array(3) == 0)
+		base += cluster[currentValue]
+    var col4 = str2col4(currentValue)
+		col4.forEach(function(c,ci){
+			previousValue[ci] += c*cluster[currentValue]
+		})
+		return previousValue
+  },[0.0,0.0,0.0,0.0])
+	return col42str(col[0]/base,col[1]/base,col[2]/base,col[3]/base)
+//  return col42str([255*col[0],255*col[1],255*col[2],255*col[3]])
 }
 
 function draw() {
