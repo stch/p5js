@@ -24,37 +24,36 @@ function gotFile(file) {
 		// Create an image DOM element but don't show it
 		img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
 
-		// todo: なんとかしてリサイズする
-		//img_s = this; //pixels//p5.Image(300,400,img_s_t)//.resize(300,300)
-		image(img_s, 0, 0, c.width/2, c.height/2);
+		// todo: なんとかして大きさを取得
+		var t_width = 400
+		var t_height = 300
+		//img_s = this; //pixels//p5.Image(t_height,t_width,img_s_t)//.resize(t_height,t_height)
+		image(img_s, 0, 0, t_width/displayDensity(), t_height/displayDensity());// retunaでdot by dotするときはdensityを考慮
     filter(POSTERIZE,8);
 
     var pixel_width = c.width * displayDensity()
-    var image_width = 400*displayDensity()//img_s.elt.width * displayDensity()
-    var image_height = 300*displayDensity()//img_s.elt.height * displayDensity()
+    var image_width = t_width*displayDensity()//img_s.elt.width * displayDensity()
+    var image_height = t_height*displayDensity()//img_s.elt.height * displayDensity()
 
 		loadPixels()
 
-		img_p = createImage(400,300)
+		img_p = createImage(t_width,t_height)
 		img_p._pixelDensity = displayDensity()
 
-		console.log("dlen: "+img_p.pixels.length)
 		img_p.loadPixels()
-		console.log("dlen: "+img_p.pixels.length +" , "+img_p.imageData.data.length)
+		//img_p.pixels.fill(88)//抜け確認
+
     var cluster = new Object()
     colorClusters.push(cluster)
 		var pixcount = 0
 		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / 4 /image_width+" d:"+displayDensity())
 		for (let l = 0; l < image_height; l++){
-			for(let i = 0; i < image_width*4; i++){
-				img_p.pixels[l*image_width+i] = pixels[l*pixel_width+i]
-			}
 			console.log("count: "+pixcount)
 			for (let i = l * pixel_width*4; i < (l*pixel_width+ image_width)*4; i += 4) {
-				// img_p.pixels[pixcount*4+0] = pixels[i+0]
-				// img_p.pixels[pixcount*4+1] = pixels[i+1]
-				// img_p.pixels[pixcount*4+2] = pixels[i+2]
-				// img_p.pixels[pixcount*4+3] = pixels[i+3]
+				img_p.pixels[pixcount*4+0] = pixels[i+0]
+				img_p.pixels[pixcount*4+1] = pixels[i+1]
+				img_p.pixels[pixcount*4+2] = pixels[i+2]
+				img_p.pixels[pixcount*4+3] = pixels[i+3]
 				colstr = color2str(pixels[i], pixels[i + 1], pixels[i + 2])
         colorClusters[0][colstr] = (colorClusters[0][colstr]+1) || 1
 				pixcount++
@@ -63,11 +62,15 @@ function gotFile(file) {
     //while(need_clusterize && colorClusters.length > 0){
       clusterize_devider()
     //}
+		colorClusters.sort(function(a, b){return -Object.keys(a).length + Object.keys(b).length})
 		var targetCluster = colorClusters[0]
-		console.log("dlen: "+img_p.pixels.length +" , "+img_p.imageData.data.length)
+		for (let i = 0;i<img_p.pixels.length;i+=4){
+			if(isInTheCluster(targetCluster,col32str([img_p.pixels[i],img_p.pixels[i+1],img_p.pixels[i+2]]))){
+				img_p.pixels[i+3]=100
+			}
+		}
 
 		img_p.updatePixels()
-		console.log("dlen: "+img_p.pixels.length +" , "+img_p.imageData.data.length)
 
 		ready = true
   } else {
@@ -85,7 +88,7 @@ function color2str(r, g, b) {
 }
 
 function col32str(col3) {
-	return "#" + hex(col3, 2).join()
+	return "#" + hex(col3, 2)
 }
 
 function str2col3(str) {
