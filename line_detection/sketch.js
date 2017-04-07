@@ -92,20 +92,6 @@ function gotFile(file) {
 	console.log("got finish." + colorClusters.length)
 }
 
-/*
-
-function color2str(r, g, b) {
-	return "#" + hex(r, 2) + hex(g, 2) + hex(b, 2)
-}
-
-function col32str(col3) {
-	return "#" + hex(col3, 2).join("")
-}
-
-function str2col3(str) {
-	return unhex([str.slice(1, 3), str.slice(3, 5), str.slice(5, 7)])
-}
-*/
 function getNearestColors(col3) {
 	var arr = new Array()
 	for (let i = (col3[0] > 0 ? col3[0] - 1 : 0); i <= col3[0] + 1 && i <= 255; i++) {
@@ -132,7 +118,7 @@ function isInTheCluster(cl, color) {
 	console.assert(typeof(color)=="array",color)
 	console.assert(typeof(cl)=="object",cl)
 	for (let col in cl) {
-		if (isInSameCluster(str2col3(col), col3)) return true
+		if (isInSameCluster(str2col3(col), color)) return true
 	}
 	return false
 	//  return getNearestColors(col3).some(function(col){return cl.hasOwnProperty(col32str(col))})
@@ -187,7 +173,7 @@ function clusterize_devider() {
 	console.log("B:clusterize_devider")
 	// 作業対象は先頭クラスタ
 	Object.keys(colorClusters[0]).forEach(function(colst) {
-		var colst_div = unhex(colst.slice(1, 7)) & 0xC0C0C0
+		var colst_div = unhex(colst.slice(0, 6)) & 0xC0C0C0
 		divider[colst_div][colst] = colorClusters[0][colst]
 		//console.log("仕分け中: "+colst_div)
 	})
@@ -267,17 +253,8 @@ function drawCluster(dw) {
 	//clusterize_detail_top()
 	//clusterize()
 }
-/*
-function col42str(r, g, b, a) {
-	return hex(int(r), 2) + hex(int(g), 2) + hex(int(b), 2) + hex(int(a), 2)
-}
 
-function str2col4(str) {
-	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6), str.slice(6, 8)])
-}
-*/
 var ct
-
 function drawAccumH(dw) {
 	if (dw == 0) return
 	console.log("B:drawAccumH dw:" + dw)
@@ -329,7 +306,7 @@ function drawAccumH(dw) {
 }
 
 function getClsMostFQCol(cluster) {
-	var colst = "888888FF" // マスク用の色
+	var colst = "889988FF" // マスク用の色
 	Object.keys(cluster).forEach(function(key) {
 		if (!cluster[colst] || cluster[key] > cluster[colst]) {
 			colst = key
