@@ -262,7 +262,7 @@ function drawAccumH(dw){
   if(dw == 0) return
 	console.log("B:drawAccumH dw:"+dw)
 
-  var pixel_width = c.width * displayDensity()//*2//なぜが2倍するとうまくいくが？?
+  var pixel_width = c.width * displayDensity()*2//なぜが2倍するとうまくいくが？?
   var dwt = dw * displayDensity()
 
   loadPixels()
@@ -270,14 +270,14 @@ function drawAccumH(dw){
   var pixcount=0
   for (let l = 0; l < dwt; l++){
     //console.log("count: "+pixcount)
-    accum[l] = {}//{"00000000":0}
+    accum[l] = {"00000000":0}
     for (let i = l * pixel_width*4; i < (l*pixel_width+ dwt)*4; i += 4) {
 			pixcount++
       if(pixels[i + 3] != 0){
 				var colst = col42str(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3])
 	      accum[l][colst] = accum[l][colst]+1 || 1
 	    }else{
-	//			accum["00000000"]++
+				accum[l]["00000000"]++
 			}
     }
   }
@@ -286,11 +286,11 @@ function drawAccumH(dw){
   if(!ct){
     ct = createImage(dw,dw)
 		// 反映されないのか、、?
-		ct._pixelDensity = displayDensity()
+		ct._pixelDensity = displayDensity()//*2
   }
   ct.loadPixels()
   for (let l = 0; l < dwt; l++){
-    var i = l*dw*4
+    var i = l*dwt*4
     ct.pixels.copyWithin(i+4,i,i+dwt*4-4)
 //    var col4 = str2col4(getClsMostFQCol(accum[l]))
 		var col4 = str2col4(getClsColComp(accum[l]))
@@ -320,9 +320,10 @@ function getClsColComp(cluster){
 		base += cluster[currentValue]
     var col4 = str2col4(currentValue)
 		if(col4[3] != 0){
-		col4.forEach(function(c,ci){
-			previousValue[ci] += c*cluster[currentValue]
-		})}
+			col4.forEach(function(c,ci){
+				previousValue[ci] += c*cluster[currentValue]
+			})
+		}
 		return previousValue
   },[0.0,0.0,0.0,0.0])
 	return col42str(col[0]/base,col[1]/base,col[2]/base,col[3]/base)
