@@ -64,13 +64,13 @@ function gotFile(file) {
     //while(need_clusterize && colorClusters.length > 0){
       clusterize_devider()
     //}
-	//	colorClusters.sort(function(a, b){return -Object.keys(a).length + Object.keys(b).length})
-	// 	var targetCluster = colorClusters[0]
-	// 	for (let i = 0;i<img_p.pixels.length;i+=4){
-	// 		if(!isInTheCluster(targetCluster,[img_p.pixels[i],img_p.pixels[i+1],img_p.pixels[i+2]])){
-	// //			img_p.pixels[i+3]=100
-	// 		}
-	// 	}
+		colorClusters.sort(function(a, b){return Object.keys(b).length - Object.keys(a).length})
+		var targetCluster = colorClusters[1]
+		for (let i = 0;i<img_p.pixels.length;i+=4){
+			if(!targetCluster[col32str([img_p.pixels[i],img_p.pixels[i+1],img_p.pixels[i+2]])]){
+				img_p.pixels[i+3]=0
+			}
+		}
 
 		img_p.updatePixels()
 
@@ -262,36 +262,36 @@ function drawAccumH(dw){
   if(dw == 0) return
 	console.log("B:drawAccumH dw:"+dw)
 
-  var pixel_width = c.width * displayDensity()
-  dw *= displayDensity()
-
+  var pixel_width = c.width * displayDensity()//*2//なぜが2倍するとうまくいくが？?
+  var dwt = dw * displayDensity()
 
   loadPixels()
-
-  var accum = new Array(dw)
+  var accum = new Array(dwt)
   var pixcount=0
-  for (let l = 0; l < dw; l++){
+  for (let l = 0; l < dwt; l++){
     //console.log("count: "+pixcount)
-    accum[l] = new Object()
-    for (let i = l * pixel_width*4; i < (l*pixel_width+ dw)*4; i += 4) {
-      var colst = col42str(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3])
+    accum[l] = {}//{"00000000":0}
+    for (let i = l * pixel_width*4; i < (l*pixel_width+ dwt)*4; i += 4) {
+			pixcount++
       if(pixels[i + 3] != 0){
+				var colst = col42str(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3])
 	      accum[l][colst] = accum[l][colst]+1 || 1
-	    }
-      pixcount++
+	    }else{
+	//			accum["00000000"]++
+			}
     }
   }
   //console.log(accum)
 //dw /= displayDensity()
   if(!ct){
-    ct = createImage(dw/displayDensity(),dw/displayDensity())
+    ct = createImage(dw,dw)
 		// 反映されないのか、、?
 		ct._pixelDensity = displayDensity()
   }
   ct.loadPixels()
-  for (let l = 0; l < dw; l++){
+  for (let l = 0; l < dwt; l++){
     var i = l*dw*4
-    ct.pixels.copyWithin(i+4,i,i+dw*4-4)
+    ct.pixels.copyWithin(i+4,i,i+dwt*4-4)
 //    var col4 = str2col4(getClsMostFQCol(accum[l]))
 		var col4 = str2col4(getClsColComp(accum[l]))
     col4.forEach(function(c,ci){
@@ -299,8 +299,10 @@ function drawAccumH(dw){
     })
   }
   ct.updatePixels()
+	image(ct,dw,0)//,dw/displayDensity(),dw/displayDensity()
   console.log("E:drawAccumH")
 }
+
 function getClsMostFQCol(cluster){
   var colst = "888888FF"
   Object.keys(cluster).forEach(function(key){
@@ -317,9 +319,10 @@ function getClsColComp(cluster){
 		//if(array(3) == 0)
 		base += cluster[currentValue]
     var col4 = str2col4(currentValue)
+		if(col4[3] != 0){
 		col4.forEach(function(c,ci){
 			previousValue[ci] += c*cluster[currentValue]
-		})
+		})}
 		return previousValue
   },[0.0,0.0,0.0,0.0])
 	return col42str(col[0]/base,col[1]/base,col[2]/base,col[3]/base)
@@ -329,8 +332,8 @@ function getClsColComp(cluster){
 function draw() {
 	//background(100);
 	clear()
-	// Draw the image onto the canvas
 	if (ready) {
+		// Draw the image onto the canvas
     var dw = sqrt(Math.pow(img_p.width,2)+Math.pow(img_p.height,2))
 	   //image(img_s, 0, 0, width*0.5, 0.5*img_s.height*width/img_s.width);
     push()
@@ -339,10 +342,8 @@ function draw() {
 		image(img_p, -img_p.width/2, -img_p.height/2)//,img_p.width*2, img_p.height*2);
 //    filter(POSTERIZE,3);
     pop()
-		//drawCluster(dw)
+		drawCluster(dw)
     drawAccumH(dw)
-		image(ct,dw/displayDensity(),0)//,dw/displayDensity(),dw/displayDensity())
-
 
 	} else {
 		fill(255);
