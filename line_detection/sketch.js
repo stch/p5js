@@ -1,7 +1,8 @@
-var img_s
+//var img_s
 var img_p
 var c
 var ready = false
+var colorClusters
 
 function setup() {
 	// create canvas
@@ -22,14 +23,13 @@ function gotFile(file) {
 	// If it's an image file
 	if (file.type === 'image') {
 		// Create an image DOM element but don't show it
-		img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
+		var img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
 
 		// todo: なんとかして大きさを取得
 		var t_width = 400
 		var t_height = 300
-		//img_s = this; //pixels//p5.Image(t_height,t_width,img_s_t)//.resize(t_height,t_height)
 		image(img_s, 0, 0, t_width/displayDensity(), t_height/displayDensity());// retunaでdot by dotするときはdensityを考慮
-    filter(POSTERIZE,8);
+    //filter(POSTERIZE,8);
 
     var pixel_width = c.width * displayDensity()
     var image_width = t_width*displayDensity()//img_s.elt.width * displayDensity()
@@ -42,13 +42,13 @@ function gotFile(file) {
 
 		img_p.loadPixels()
 		//img_p.pixels.fill(88)//抜け確認
-
+		colorClusters = new Array()
     var cluster = new Object()
     colorClusters.push(cluster)
 		var pixcount = 0
-		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / 4 /image_width+" d:"+displayDensity())
+		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4*image_width)+" d:"+displayDensity())
 		for (let l = 0; l < image_height; l++){
-			console.log("count: "+pixcount)
+//			console.log("count: "+pixcount)
 			for (let i = l * pixel_width*4; i < (l*pixel_width+ image_width)*4; i += 4) {
 				img_p.pixels[pixcount*4+0] = pixels[i+0]
 				img_p.pixels[pixcount*4+1] = pixels[i+1]
@@ -59,18 +59,22 @@ function gotFile(file) {
 				pixcount++
       }
     }
+		console.log("load completed: " + Object.keys(colorClusters[0]).length)
+
     //while(need_clusterize && colorClusters.length > 0){
       clusterize_devider()
     //}
-		colorClusters.sort(function(a, b){return -Object.keys(a).length + Object.keys(b).length})
-		var targetCluster = colorClusters[0]
-		for (let i = 0;i<img_p.pixels.length;i+=4){
-			if(isInTheCluster(targetCluster,col32str([img_p.pixels[i],img_p.pixels[i+1],img_p.pixels[i+2]]))){
-				img_p.pixels[i+3]=100
-			}
-		}
+	//	colorClusters.sort(function(a, b){return -Object.keys(a).length + Object.keys(b).length})
+	// 	var targetCluster = colorClusters[0]
+	// 	for (let i = 0;i<img_p.pixels.length;i+=4){
+	// 		if(!isInTheCluster(targetCluster,[img_p.pixels[i],img_p.pixels[i+1],img_p.pixels[i+2]])){
+	// //			img_p.pixels[i+3]=100
+	// 		}
+	// 	}
 
 		img_p.updatePixels()
+
+		//img_s.remove()
 
 		ready = true
   } else {
@@ -81,14 +85,12 @@ function gotFile(file) {
 
 
 
-var colorClusters = new Array()
-
 function color2str(r, g, b) {
 	return "#" + hex(r, 2) + hex(g, 2) + hex(b, 2)
 }
 
 function col32str(col3) {
-	return "#" + hex(col3, 2).join()
+	return "#" + hex(col3, 2).join("")
 }
 
 function str2col3(str) {
@@ -161,9 +163,9 @@ function clusterize_tipical_center(){
 // 各辺4分割、計64個仕様
 //まずは作業用のお部屋を準備
 var ldv = 2
-var dv = 2**ldv
+var dv = Math.pow(2,ldv)
 var divider = new Object()
-for(let i = 0; i<2**(3*ldv); i++){
+for(let i = 0; i<(1<<(3*ldv)); i++){
   divider[((i&0b110000)<<18)+((i&0b001100)<<12)+((i&0b000011)<<6)] = new Object()
 }
 function clusterize_devider(){
@@ -223,7 +225,7 @@ function clusterize_detail_top(){
 }
 /*
 var near_cluster_p = new Object()
-for(let i = 0; i<2**6; i++){
+for(let i = 0; i<Math.pow(2,6); i++){
   near_cluster_p[((i&0b110000)<<18)+((i&0b001100)<<12)+((i&0b000011)<<6)] = new Object()
 }
 var near_cluster_n = new Object()
@@ -250,23 +252,24 @@ function drawCluster(dw){
 function col42str(r, g, b, a) {
 	return hex(int(r), 2) + hex(int(g), 2) + hex(int(b), 2) + hex(int(a), 2)
 }
+
 function str2col4(str) {
 	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6), str.slice(6, 8)])
 }
 
 var ct
 function drawAccumH(dw){
-  console.log("B:drawAccumH dw:"+dw)
+  if(dw == 0) return
+	console.log("B:drawAccumH dw:"+dw)
 
   var pixel_width = c.width * displayDensity()
   dw *= displayDensity()
-  if(dw == 0) return
+
 
   loadPixels()
 
   var accum = new Array(dw)
   var pixcount=0
-
   for (let l = 0; l < dw; l++){
     //console.log("count: "+pixcount)
     accum[l] = new Object()
@@ -279,10 +282,10 @@ function drawAccumH(dw){
     }
   }
   //console.log(accum)
-
+//dw /= displayDensity()
   if(!ct){
-    ct = createImage(dw,dw)
-		// 反映されないのか、、
+    ct = createImage(dw/displayDensity(),dw/displayDensity())
+		// 反映されないのか、、?
 		ct._pixelDensity = displayDensity()
   }
   ct.loadPixels()
@@ -294,10 +297,8 @@ function drawAccumH(dw){
     col4.forEach(function(c,ci){
       ct.pixels[i+ci]=c
     })
-
   }
   ct.updatePixels()
-	image(ct,dw,0)
   console.log("E:drawAccumH")
 }
 function getClsMostFQCol(cluster){
@@ -330,16 +331,18 @@ function draw() {
 	clear()
 	// Draw the image onto the canvas
 	if (ready) {
-    var dw = sqrt(img_p.width**2+img_p.height**2)
+    var dw = sqrt(Math.pow(img_p.width,2)+Math.pow(img_p.height,2))
 	   //image(img_s, 0, 0, width*0.5, 0.5*img_s.height*width/img_s.width);
     push()
     translate(dw/2,dw/2)
     rotate(TWO_PI*(frameCount/360.0))
 		image(img_p, -img_p.width/2, -img_p.height/2)//,img_p.width*2, img_p.height*2);
-    filter(POSTERIZE,3);
+//    filter(POSTERIZE,3);
     pop()
-		drawCluster(dw)
-    //drawAccumH(dw)
+		//drawCluster(dw)
+    drawAccumH(dw)
+		image(ct,dw/displayDensity(),0)//,dw/displayDensity(),dw/displayDensity())
+
 
 	} else {
 		fill(255);
