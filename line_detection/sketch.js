@@ -18,7 +18,7 @@ function setup() {
 }
 
 function color2str(col_arr){
-	return hex(col_arr,2).join("")
+	return hex(int(col_arr),2).join("")
 }
 function str2col3(str){
 	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6)])
@@ -170,7 +170,7 @@ for (let i = 0; i < (1 << (3 * ldv)); i++) {
 }
 
 function clusterize_devider() {
-	console.log("B:clusterize_devider")
+	console.log("B:clusterize_devider :"+colorClusters.length)
 	// 作業対象は先頭クラスタ
 	Object.keys(colorClusters[0]).forEach(function(colst) {
 		var colst_div = unhex(colst.slice(0, 6)) & 0xC0C0C0
@@ -184,7 +184,7 @@ function clusterize_devider() {
 		}
 	})
 	colorClusters.shift()
-	console.log("E:clusterize_devider")
+	console.log("E:clusterize_devider + "+ colorClusters.length)
 }
 
 // 先頭クラスタを詳細マッチング
