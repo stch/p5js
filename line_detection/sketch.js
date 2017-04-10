@@ -39,7 +39,7 @@ function gotFile(file) {
         // todo: なんとかして大きさを取得
         var t_width = 400
         var t_height = 300
-        image(img_s, 0, 0, t_width / displayDensity(), t_height / displayDensity()); // retunaでdot by dotするときはdensityを考慮
+        image(img_s, 0, 0, t_width / displayDensity(), t_height / displayDensity()); // retinaでdot by dotするときはdensityを考慮
         //filter(POSTERIZE,8);
 
         var pixel_width = c.width * displayDensity()
@@ -47,16 +47,15 @@ function gotFile(file) {
         var image_height = t_height * displayDensity() //img_s.elt.height * displayDensity()
 
         loadPixels()
+        console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4 * image_width) + " d:" + displayDensity())
 
+        // img_pに img_sの描画結果をコピー&使用する色をまとめる
         img_p = createImage(t_width, t_height)
         img_p._pixelDensity = displayDensity()
         img_p.loadPixels()
         //img_p.pixels.fill(88)//抜け確認
-        colorClusters = new Array()
         var cluster = new Object()
-        colorClusters.push(cluster)
         var pixcount = 0
-        console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4 * image_width) + " d:" + displayDensity())
         for (let l = 0; l < image_height; l++) {
             //			console.log("count: "+pixcount)
             for (let i = l * pixel_width * 4; i < (l * pixel_width + image_width) * 4; i += 4) {
@@ -65,18 +64,23 @@ function gotFile(file) {
                 img_p.pixels[pixcount * 4 + 2] = pixels[i + 2]
                 img_p.pixels[pixcount * 4 + 3] = pixels[i + 3]
                 colstr = color2str([pixels[i], pixels[i + 1], pixels[i + 2]])
-                colorClusters[0][colstr] = (colorClusters[0][colstr] + 1) || 1
+                cluster[colstr] = (cluster[colstr] + 1) || 1
                 pixcount++
             }
         }
-        console.log("load completed: " + Object.keys(colorClusters[0]).length)
+        console.log("load completed: " + Object.keys(cluster).length)
+        img_s.remove()
 
-        //while(need_clusterize && colorClusters.length > 0){
-        clusterize_devider()
-        //}
+        colorClusters = new Array()
+
+        // とりあえず一つのオブジェクトに突っ込まれた要素をクラスタ化してglobal
+        Array.prototype.push.apply(colorClusters,clusterize_devider(cluster))
+        colorClusters.slice()
         colorClusters.sort(function(a, b) {
             return Object.keys(b).length - Object.keys(a).length
         })
+
+        // 画像をクラスタの色のみにする。クラスタ外の色はalpha=0
         var targetCluster = colorClusters[0]
         for (let i = 0; i < img_p.pixels.length; i += 4) {
             if (!targetCluster[color2str([img_p.pixels[i], img_p.pixels[i + 1], img_p.pixels[i + 2]])]) {
@@ -84,8 +88,6 @@ function gotFile(file) {
             }
         }
         img_p.updatePixels()
-
-        //img_s.remove()
 
         ready = true
     } else {
@@ -162,35 +164,39 @@ function clusterize_tipical_center() {
     return need_clusterize_tc
 }
 
-// 各辺4分割、計64個仕様
-//まずは作業用のお部屋を準備
-var ldv = 2
-var dv = Math.pow(2, ldv)
-var divider = new Object()
-for (let i = 0; i < (1 << (3 * ldv)); i++) {
-    divider[((i & 0b110000) << 18) + ((i & 0b001100) << 12) + ((i & 0b000011) << 6)] = new Object()
-}
 
-function clusterize_devider() {
-    console.log("B:clusterize_devider :" + colorClusters.length)
-    // 作業対象は先頭クラスタ
-    Object.keys(colorClusters[0]).forEach(function(colst) {
+// クラスタを受け取ってメッシュごとに分けて返す
+function clusterize_devider(cluster) {
+    var ret_arr = new Array()
+    console.log("B:clusterize_devider :")
+    // 各辺4分割、計64個仕様
+    //まずは作業用のお部屋を準備
+    var ldv = 2
+    var dv = Math.pow(2, ldv)
+    var divider = new Object()
+    for (let i = 0; i < (1 << (3 * ldv)); i++) {
+        divider[((i & 0b110000) << 18) + ((i & 0b001100) << 12) + ((i & 0b000011) << 6)] = new Object()
+    }
+    // メッシュに振り分け
+    // Object のキー自体にメッシュの位置情報を埋め込むことで振り分けを実現
+    Object.keys(cluster).forEach(function(colst) {
         var colst_div = unhex(colst.slice(0, 6)) & 0xC0C0C0
-        divider[colst_div][colst] = colorClusters[0][colst]
+        divider[colst_div][colst] = cluster[colst]
         //console.log("仕分け中: "+colst_div)
     })
+    // メッシュ毎の存在するオブジェクトをまとめる
     Object.keys(divider).forEach(function(colst_div) {
         console.log("c:" + hex(Number(colst_div)) + ", s:" + Object.keys(divider[colst_div]).length)
         if (Object.keys(divider[colst_div]).length > 0) {
-            colorClusters.push(divider[colst_div])
+            ret_arr.push(divider[colst_div])
         }
     })
-    colorClusters.shift()
-    console.log("E:clusterize_devider + " + colorClusters.length)
+    console.log("E:clusterize_devider + " + ret_arr.length)
+    return ret_arr
 }
 
 // 先頭クラスタを詳細マッチング
-function clusterize_detail_top() {
+function clusterize_detail_top(cluster) {
     console.log("B:clusterize_detail_top: " + Object.keys(colorClusters[0]).length)
     var temp_cl = new Array()
     Object.keys(colorClusters[0]).forEach(function(colst) {
