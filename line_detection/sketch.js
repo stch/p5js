@@ -69,7 +69,8 @@ ColorCluster.prototype.getAverageCol = function() {
 		}
 		return previousValue
 	}, [0.0, 0.0, 0.0, 0.0])
-	return color2str([col[0] / base, col[1] / base, col[2] / base, col[3] / base])
+	//return color2str([col[0] / base, col[1] / base, col[2] / base, col[3] / base])
+	return [col[0] / base, col[1] / base, col[2] / base, col[3] / base]
 }
 
 var img_p
@@ -113,8 +114,8 @@ function gotFile(file) {
 		var img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
 
 		// todo: なんとかして大きさを取得
-		var t_width = 400
-		var t_height = 300
+		var t_width = 200
+		var t_height = 150
 		image(img_s, 0, 0, t_width / displayDensity() , t_height /displayDensity() ); // retinaでdot by dotするときはdensityを考慮
 		//filter(POSTERIZE,8);
 
@@ -262,6 +263,8 @@ function clusterize_devider(cluster) {
 		divider[colst_div].setColor(colst, cluster.getColor(colst))
 		//console.log("仕分け中: "+colst_div)
 	})
+
+
 	// メッシュ毎の存在するオブジェクトをまとめる
 	Object.keys(divider).forEach(function(colst_div) {
 		console.log("c:" + hex(Number(colst_div)) + ", s:" + Object.keys(divider[colst_div]).length)
@@ -332,10 +335,11 @@ function drawCluster(dw) {
 }
 
 var ct
-
+var pa
+var ppa
 function drawAccumH(dw) {
 	if (dw == 0) return
-	console.log("B:drawAccumH dw:" + dw)
+	// console.log("B:drawAccumH dw:" + dw)
 
 	var pixel_width = c.width * displayDensity() * 2 //なぜが2倍するとうまくいくが？?
 	var dwt = dw * displayDensity()
@@ -354,7 +358,8 @@ function drawAccumH(dw) {
 			pixcount++
 			var colst = "00000000"
 			if (pixels[i + 3] != 0) {
-				colst = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
+				//colst = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
+				colst = color2str([0, 0, 0, 255])
 			}
 			accum[l].addColor(colst)
 		}
@@ -371,25 +376,37 @@ function drawAccumH(dw) {
 		var i = l * dwt * 4
 		ct.pixels.copyWithin(i + 4, i, i + dwt * 4 - 4)
 		//    var col4 = str2col4(getClsMostFQCol(accum[l]))
-		var col4 = str2col4(accum[l].getAverageCol())
-		col4.forEach(function(c, ci) {
-			ct.pixels[i + ci] = c
-		})
+		// accum[l].getAverageCol().forEach(function(c, ci) {
+		// 	ct.pixels[i + ci] = c
+		// })
+		accum[l] = accum[l].getAverageCol()[3]
+		// ct.pixels[i + 0] = 128+accum[l]/2
+		// ct.pixels[i + 1] = pa? (128 - (pa[l]-accum[l])*2) : 255
+		// ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255
+
+		ct.pixels[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
+		ct.pixels[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
+		ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
+
+		ct.pixels[i + 3] = 255
 	}
 	ct.updatePixels()
 
+	ppa = pa
+	pa = accum
+
 	// 描画
 	image(ct, dw, 0) //,dw/displayDensity(),dw/displayDensity()
-	console.log("E:drawAccumH")
+	// console.log("E:drawAccumH")
 }
 
 function draw() {
 	//background(100);
-	clear()
+	clear(0)
 	if (ready) {
 		// Draw the image onto the canvas
-		var dw = img_p.width /2
-		var dh = img_p.height/2
+		var dw = img_p.width// /2
+		var dh = img_p.height// /2
 		var dd = sqrt(Math.pow(dw, 2) + Math.pow(dh, 2))
 		push()
 		translate(dd / 2, dd / 2)
