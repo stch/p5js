@@ -79,7 +79,8 @@ var colorClusters
 
 function setup() {
 	// create canvas
-	c = createCanvas(screen.width, screen.height);
+	//c = createCanvas(screen.width, screen.height);
+	c = createCanvas(windowWidth, windowHeight);
 	background(100);
 	fill(255);
 	noStroke();
