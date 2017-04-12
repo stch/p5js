@@ -107,13 +107,14 @@ function gotFile(file) {
 	ready = false
 	// If it's an image file
 	if (file.type === 'image') {
+		clear()
 		// Create an image DOM element but don't show it
 		var img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
 
 		// todo: なんとかして大きさを取得
 		var t_width = 400
 		var t_height = 300
-		image(img_s, 0, 0, t_width / displayDensity(), t_height / displayDensity()); // retinaでdot by dotするときはdensityを考慮
+		image(img_s, 0, 0, t_width / displayDensity() , t_height /displayDensity() ); // retinaでdot by dotするときはdensityを考慮
 		//filter(POSTERIZE,8);
 
 		var pixel_width = c.width * displayDensity()
@@ -156,7 +157,7 @@ function gotFile(file) {
 		})
 
 		// 画像をクラスタの色のみにする。クラスタ外の色はalpha=0
-		var targetCluster = colorClusters[1]
+		var targetCluster = colorClusters[0]
 		for (let i = 0; i < img_p.pixels.length; i += 4) {
 			if (!targetCluster.includes(color2str([img_p.pixels[i], img_p.pixels[i + 1], img_p.pixels[i + 2], img_p.pixels[i + 3]]))) {
 				img_p.pixels[i + 3] = 0
@@ -386,15 +387,17 @@ function draw() {
 	clear()
 	if (ready) {
 		// Draw the image onto the canvas
-		var dw = sqrt(Math.pow(img_p.width, 2) + Math.pow(img_p.height, 2))
+		var dw = img_p.width /2
+		var dh = img_p.height/2
+		var dd = sqrt(Math.pow(dw, 2) + Math.pow(dh, 2))
 		push()
-		translate(dw / 2, dw / 2)
+		translate(dd / 2, dd / 2)
 		rotate(TWO_PI * (frameCount / 360.0))
-		image(img_p, -img_p.width / 2, -img_p.height / 2) //,img_p.width*2, img_p.height*2);
+		image(img_p, -dw / 2, -dh / 2,dw, dh);
 		//    filter(POSTERIZE,3);
 		pop()
-		drawCluster(dw)
-		drawAccumH(dw)
+		drawCluster(dd)
+		drawAccumH(dd)
 
 	} else {
 		fill(100);
