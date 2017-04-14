@@ -1,3 +1,5 @@
+/// 準備
+//// 色をクラスタ化処理するためのクラス
 var ColorCluster = function(colorObj) {
 	if (!(this instanceof ColorCluster)) {
 		return new ColorCluster();
@@ -69,10 +71,65 @@ ColorCluster.prototype.getAverageCol = function() {
 		}
 		return previousValue
 	}, [0.0, 0.0, 0.0, 0.0])
-	//return color2str([col[0] / base, col[1] / base, col[2] / base, col[3] / base])
 	return [col[0] / base, col[1] / base, col[2] / base, col[3] / base]
 }
 
+//// 色変数操作のためのヘルパー関数
+//// 基本的にはColorObj内での使用にとどめておきたいなー(要refactor)
+function color2str(col_arr) {
+	return hex(int(col_arr), 2).join("")
+}
+
+function str2col3(str) {
+	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6)])
+}
+
+function str2col4(str) {
+	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6), str.slice(6, 8)])
+}
+
+//// canvas の pixel 値を取得してどうこうするヘルパー関数
+///// funcPX(canvas_r,canvas_g,canvas_b,canvas_a,x,y,pixcount)
+///// funcLine(line_num)
+function canvasForEachPx(funcPX,funcLine,start_x,start_y,end_x,end_y){
+	if(!funcPX && !funcLine) return
+	loadPixels()
+	console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4 * end_x) + " d:" + displayDensity())
+	var pixel_width = c.width * displayDensity()
+	var pixcount = 0
+	for (let l = start_y; l < end_y; l++) {
+		if (funcLine) funcLine(l)
+		if (funcPX) {
+			for (let i = (l * pixel_width + start_x) * 4; i < (l * pixel_width + end_x) * 4; i += 4) {
+				funcPX([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]], i, l, pixcount)
+				pixcount++
+			}
+		}
+	}
+}
+//// p5Imageのpixel操作のためのヘルパー関数
+///// funcPX(p5image.pixels,x,y,pixcount)
+///// funcLine(line_num)
+function forEachPx(p5image,funcPX,funcLine){
+	if(!p5image || (!funcPX && !funcLine)) return
+	p5image.loadPixels()
+	var image_width = p5image.width * displayDensity()
+	var image_height = p5image.height * displayDensity()
+	var pixcount = 0
+	for (let l = 0; l < image_height; l++) {
+		if (funcLine) funcLine(p5image.pixels, l)
+		if (funcPX) {
+			//for (let i = l * image_width * 4; i < (l + 1) * image_width * 4; i += 4) {
+			for (let i = 0; i < image_width; i++) {
+				funcPX(p5image.pixels, i, l, pixcount)
+				pixcount++
+			}
+		}
+	}
+	p5image.updatePixels()
+}
+
+/////ここから本編
 var img_p
 var c
 var ready = false
@@ -93,18 +150,6 @@ function setup() {
 	c.drop(gotFile);
 }
 
-function color2str(col_arr) {
-	return hex(int(col_arr), 2).join("")
-}
-
-function str2col3(str) {
-	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6)])
-}
-
-function str2col4(str) {
-	return unhex([str.slice(0, 2), str.slice(2, 4), str.slice(4, 6), str.slice(6, 8)])
-}
-
 function gotFile(file) {
 	ready = false
 	// If it's an image file
@@ -120,32 +165,38 @@ function gotFile(file) {
 		//filter(POSTERIZE,8);
 
 		var pixel_width = c.width * displayDensity()
-		var image_width = t_width * displayDensity() //img_s.elt.width * displayDensity()
-		var image_height = t_height * displayDensity() //img_s.elt.height * displayDensity()
-
 		loadPixels()
-		console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4 * image_width) + " d:" + displayDensity())
+		// var image_width = t_width * displayDensity()
+		// var image_height = t_height * displayDensity()
+		// console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4 * image_width) + " d:" + displayDensity())
 
 		// img_pに img_sの描画結果をコピー&使用する色をまとめる
 		img_p = createImage(t_width, t_height)
 		img_p._pixelDensity = displayDensity()
-		img_p.loadPixels()
+		// img_p.loadPixels()
 		//img_p.pixels.fill(88)//抜け確認
 		var cluster = new ColorCluster()
-		var pixcount = 0
-		for (let l = 0; l < image_height; l++) {
-			//			console.log("count: "+pixcount)
-			for (let i = l * pixel_width * 4; i < (l * pixel_width + image_width) * 4; i += 4) {
-				img_p.pixels[pixcount * 4 + 0] = pixels[i + 0]
-				img_p.pixels[pixcount * 4 + 1] = pixels[i + 1]
-				img_p.pixels[pixcount * 4 + 2] = pixels[i + 2]
-				img_p.pixels[pixcount * 4 + 3] = pixels[i + 3]
-				colstr = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
-				cluster.addColor(colstr)
-				pixcount++
+		// var pixcount = 0
+		// for (let l = 0; l < image_height; l++) {
+		// 	for (let i = l * pixel_width * 4; i < (l * pixel_width + image_width) * 4; i += 4) {
+		forEachPx(img_p,function(p_px,x,y,pxcount){
+
+			base_c = (y*pixel_width+x)*4
+			for(let i = 0;i<4;i++){
+				p_px[pxcount + i] = pixels[base_c + i]
 			}
-		}
-		//console.log("load completed: " + Object.keys(cluster).length)
+			colstr = color2str([pixels[base_c], pixels[base_c + 1], pixels[base_c + 2], pixels[base_c + 3]])
+				// p_px[pixcount * 4 + 0] = pixels[i + 0]
+				// p_px[pixcount * 4 + 1] = pixels[i + 1]
+				// p_px[pixcount * 4 + 2] = pixels[i + 2]
+				// p_px[pixcount * 4 + 3] = pixels[i + 3]
+				//colstr = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
+				cluster.addColor(colstr)
+		})
+		// 		pixcount++
+		// 	}
+		// }
+
 		console.log("load completed: " + cluster.length)
 		img_s.remove()
 
@@ -359,6 +410,7 @@ function drawAccumH(dw) {
 			var colst = "00000000"
 			if (pixels[i + 3] != 0) {
 				//colst = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
+				// とりあえず色のカウントに集中
 				colst = color2str([0, 0, 0, 255])
 			}
 			accum[l].addColor(colst)
@@ -376,9 +428,7 @@ function drawAccumH(dw) {
 		var i = l * dwt * 4
 		ct.pixels.copyWithin(i + 4, i, i + dwt * 4 - 4)
 		//    var col4 = str2col4(getClsMostFQCol(accum[l]))
-		// accum[l].getAverageCol().forEach(function(c, ci) {
-		// 	ct.pixels[i + ci] = c
-		// })
+
 		accum[l] = accum[l].getAverageCol()[3]
 		// ct.pixels[i + 0] = 128+accum[l]/2
 		// ct.pixels[i + 1] = pa? (128 - (pa[l]-accum[l])*2) : 255
