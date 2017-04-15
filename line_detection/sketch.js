@@ -166,36 +166,21 @@ function gotFile(file) {
 
 		var pixel_width = c.width * displayDensity()
 		loadPixels()
-		// var image_width = t_width * displayDensity()
-		// var image_height = t_height * displayDensity()
-		// console.log("pixels.length: " + pixels.length + ", h:" + pixels.length / (4 * image_width) + " d:" + displayDensity())
 
 		// img_pに img_sの描画結果をコピー&使用する色をまとめる
 		img_p = createImage(t_width, t_height)
 		img_p._pixelDensity = displayDensity()
-		// img_p.loadPixels()
-		//img_p.pixels.fill(88)//抜け確認
-		var cluster = new ColorCluster()
-		// var pixcount = 0
-		// for (let l = 0; l < image_height; l++) {
-		// 	for (let i = l * pixel_width * 4; i < (l * pixel_width + image_width) * 4; i += 4) {
-		forEachPx(img_p,function(p_px,x,y,pxcount){
 
-			base_c = (y*pixel_width+x)*4
-			for(let i = 0;i<4;i++){
-				p_px[pxcount + i] = pixels[base_c + i]
+		var cluster = new ColorCluster()
+
+		forEachPx(img_p,function(p_px,x,y,pxcount){
+			base_c = (y * pixel_width + x) * 4
+			for (let i = 0; i < 4; i++) {
+				p_px[pxcount*4 + i] = pixels[base_c + i]
 			}
 			colstr = color2str([pixels[base_c], pixels[base_c + 1], pixels[base_c + 2], pixels[base_c + 3]])
-				// p_px[pixcount * 4 + 0] = pixels[i + 0]
-				// p_px[pixcount * 4 + 1] = pixels[i + 1]
-				// p_px[pixcount * 4 + 2] = pixels[i + 2]
-				// p_px[pixcount * 4 + 3] = pixels[i + 3]
-				//colstr = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
-				cluster.addColor(colstr)
+			cluster.addColor(colstr)
 		})
-		// 		pixcount++
-		// 	}
-		// }
 
 		console.log("load completed: " + cluster.length)
 		img_s.remove()
@@ -430,14 +415,12 @@ function drawAccumH(dw) {
 		//    var col4 = str2col4(getClsMostFQCol(accum[l]))
 
 		accum[l] = accum[l].getAverageCol()[3]
-		// ct.pixels[i + 0] = 128+accum[l]/2
-		// ct.pixels[i + 1] = pa? (128 - (pa[l]-accum[l])*2) : 255
-		// ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255
 
-		ct.pixels[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
-		ct.pixels[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
-		ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
-
+		// ct.pixels[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
+		// ct.pixels[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
+		// ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
+		ct.pixels[i + 2] = ct.pixels[i + 1] = ct.pixels[i + 0] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
+		//ct.pixels[i + 1] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
 		ct.pixels[i + 3] = 255
 	}
 	ct.updatePixels()
