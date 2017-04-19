@@ -399,25 +399,34 @@ function drawAccumH(dw) {
 	image(ct, dw, 0) //,dw/displayDensity(),dw/displayDensity()
 	// console.log("E:drawAccumH")
 }
-
+var rot
 function draw() {
 	//background(100);
 	clear(0)
 	if (ready) {
+		rot = frameCount / 360.0
 		// Draw the image onto the canvas
 		var dw = img_p.width// /2
 		var dh = img_p.height// /2
 		var dd = sqrt(Math.pow(dw, 2) + Math.pow(dh, 2))
 		push()
 		translate(dd / 2, dd / 2)
-		rotate(TWO_PI * (frameCount / 360.0))
+		rotate(TWO_PI * rot)
 		image(img_p, -dw / 2, -dh / 2,dw, dh);
 		//    filter(POSTERIZE,3);
 		pop()
-		drawCluster(dd)
 		drawAccumH(dd)
-
-	} else {
+		drawCluster(dd)
+		// push()
+		// 	translate(dd / 2, dd / 2)
+		// 	for(let r = 0; r < 180; r++ ){
+		// 		stroke()
+		// 		point(-dw / 2, dw)
+		// 		point(-dw / 2, 0)
+		// 		rotate(TWO_PI * rot+r)
+		// 	}
+		// pop()
+		} else {
 		fill(100);
 		noStroke();
 		textSize(24);
