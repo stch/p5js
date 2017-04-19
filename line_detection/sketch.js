@@ -438,7 +438,6 @@ function drawAccumH(dw) {
 }
 var rot
 function draw() {
-<<<<<<< HEAD
 	//background(100);
 	clear(0)
 	if (ready) {
@@ -472,29 +471,3 @@ function draw() {
 		text('Drag an image file onto the canvas.', width / 2, height / 2);
 	}
 }
-=======
-    //background(100);
-    clear(0)
-    if (ready) {
-        // Draw the image onto the canvas
-        var dw = img_p.width // /2
-        var dh = img_p.height // /2
-        var dd = sqrt(Math.pow(dw, 2) + Math.pow(dh, 2))
-        push()
-        translate(dd / 2, dd / 2)
-        rotate(TWO_PI * (frameCount / 360.0))
-        image(img_p, -dw / 2, -dh / 2, dw, dh);
-        //    filter(POSTERIZE,3);
-        pop()
-        drawCluster(dd)
-        drawAccumH(dd)
-
-    } else {
-        fill(100);
-        noStroke();
-        textSize(24);
-        textAlign(CENTER);
-        text('Drag an image file onto the canvas.', width / 2, height / 2);
-    }
-}
->>>>>>> 531e7819089a132af732436e22bc4f443addc6b6
