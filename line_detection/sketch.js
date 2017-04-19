@@ -1,6 +1,6 @@
 /// 準備
 //// 色をクラスタ化処理するためのクラス
-var ColorCluster = function(colorObj) {
+var ColorCluster = function (colorObj) {
     if (!(this instanceof ColorCluster)) {
         return new ColorCluster();
     }
@@ -13,7 +13,7 @@ var ColorCluster = function(colorObj) {
         this.length = 0;
     }
 }
-ColorCluster.prototype.addColor = function(colstr) {
+ColorCluster.prototype.addColor = function (colstr) {
     if (this.colors[colstr]) {
         this.colors[colstr]++
     } else {
@@ -21,36 +21,36 @@ ColorCluster.prototype.addColor = function(colstr) {
         this.length++
     }
 }
-ColorCluster.prototype.setColor = function(colstr, count) {
+ColorCluster.prototype.setColor = function (colstr, count) {
     if (!this.colors[colstr]) {
         this.length++
     }
     this.colors[colstr] = count
 }
-ColorCluster.prototype.getColor = function(colstr) {
+ColorCluster.prototype.getColor = function (colstr) {
     return this.colors[colstr]
 }
-ColorCluster.prototype.includes = function(colstr) {
+ColorCluster.prototype.includes = function (colstr) {
     return this.colors[colstr] != undefined
 }
-ColorCluster.prototype.isInTheCluster = function(color) {
-    console.assert(typeof(color) == "array", color)
+ColorCluster.prototype.isInTheCluster = function (color) {
+    console.assert(typeof (color) == "array", color)
     for (let col in this.colors) {
         if (isInSameCluster(str2col3(col), color)) return true
     }
     return false
 }
-ColorCluster.prototype.getFirstColorStr = function() {
+ColorCluster.prototype.getFirstColorStr = function () {
     return Object.keys(this.colors)[0]
 }
-ColorCluster.prototype.forEach = function(callback, thisObj) {
+ColorCluster.prototype.forEach = function (callback, thisObj) {
     Object.keys(this.colors).forEach(callback, thisObj)
 }
 
-ColorCluster.prototype.getMostFQCol = function() {
+ColorCluster.prototype.getMostFQCol = function () {
     var colst = "889988FF" // マスク用の色
     var self = this
-    this.forEach(function(key) {
+    this.forEach(function (key) {
         if (!self.colors[colst] || self.colors[key] > self.colors[colst]) {
             colst = key
         }
@@ -58,14 +58,14 @@ ColorCluster.prototype.getMostFQCol = function() {
     return colst
 }
 
-ColorCluster.prototype.getAverageCol = function() {
+ColorCluster.prototype.getAverageCol = function () {
     var base = 0.0
     var self = this
-    var col = Object.keys(this.colors).reduce(function(previousValue, currentValue, index, array) {
+    var col = Object.keys(this.colors).reduce(function (previousValue, currentValue, index, array) {
         base += self.colors[currentValue]
         var col4 = str2col4(currentValue)
         if (col4[3] != 0) {
-            col4.forEach(function(c, ci) {
+            col4.forEach(function (c, ci) {
                 previousValue[ci] += c * self.colors[currentValue]
             })
         }
@@ -89,7 +89,7 @@ function str2col4(str) {
 }
 
 //// canvas の pixel 値を取得してどうこうするヘルパー関数
-///// funcPX(canvas_r,canvas_g,canvas_b,canvas_a,x,y,pixcount)
+///// funcPX(canvas_rgba,x,y,pixcount,pixel_width)
 ///// funcLine(line_num)
 function canvasForEachPx(funcPX, funcLine, start_x, start_y, end_x, end_y) {
     if (!funcPX && !funcLine) return
@@ -101,7 +101,7 @@ function canvasForEachPx(funcPX, funcLine, start_x, start_y, end_x, end_y) {
         if (funcLine) funcLine(l)
         if (funcPX) {
             for (let i = (l * pixel_width + start_x) * 4; i < (l * pixel_width + end_x) * 4; i += 4) {
-                funcPX([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]], i, l, pixcount)
+                funcPX([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]], i, l, pixcount,pixel_width)
                 pixcount++
             }
         }
@@ -109,7 +109,7 @@ function canvasForEachPx(funcPX, funcLine, start_x, start_y, end_x, end_y) {
 }
 //// p5Imageのpixel操作のためのヘルパー関数
 ///// funcPX(p5image.pixels,x,y,pixcount)
-///// funcLine(line_num)
+///// funcLine(p5image.pixels,line_num)
 function forEachPx(p5image, funcPX, funcLine) {
     if (!p5image || (!funcPX && !funcLine)) return
     p5image.loadPixels()
@@ -151,10 +151,10 @@ function setup() {
 
 function gotFile(file) {
     ready = false
-        // If it's an image file
+    // If it's an image file
     if (file.type === 'image') {
         clear()
-            // Create an image DOM element but don't show it
+        // Create an image DOM element but don't show it
         var img_s = createImg(file.data).hide(); //.attribute("width","50%")//こっちで設定してもデータサイズは変わらない
 
         // todo: なんとかして大きさを取得
@@ -172,7 +172,7 @@ function gotFile(file) {
 
         var cluster = new ColorCluster()
 
-        forEachPx(img_p, function(p_px, x, y, pxcount) {
+        forEachPx(img_p, function (p_px, x, y, pxcount) {
             base_c = (y * pixel_width + x) * 4
             for (let i = 0; i < 4; i++) {
                 p_px[pxcount * 4 + i] = pixels[base_c + i]
@@ -189,15 +189,15 @@ function gotFile(file) {
         // とりあえず一つのオブジェクトに突っ込まれた要素をクラスタ化してglobal
         Array.prototype.push.apply(colorClusters, clusterize_devider(cluster))
         colorClusters.slice()
-        colorClusters.sort(function(a, b) {
+        colorClusters.sort(function (a, b) {
             return b.length - a.length
         })
 
         // 画像をクラスタの色のみにする。クラスタ外の色はalpha=0
         var targetCluster = colorClusters[0]
-        forEachPx(img_p, function(p_px, x, y, pxcount) {
+        forEachPx(img_p, function (p_px, x, y, pxcount) {
             if (!targetCluster.includes(color2str([
-                    p_px[pxcount],
+                    p_px[pxcount + 0],
                     p_px[pxcount + 1],
                     p_px[pxcount + 2],
                     p_px[pxcount + 3]
@@ -226,23 +226,23 @@ function getNearestColors(col3) {
 }
 
 function isInSameCluster(cola, colb) {
-    console.assert(typeof(cola) == "array", cola)
-    console.assert(typeof(colb) == "array", colb)
-    return 32 > cola.reduce(function(previousValue, currentValue, index, array) {
+    console.assert(typeof (cola) == "array", cola)
+    console.assert(typeof (colb) == "array", colb)
+    return 32 > cola.reduce(function (previousValue, currentValue, index, array) {
         return previousValue + abs(currentValue - colb[index])
-            //return max(previousValue,abs(currentValue - col3b[index]))
-            //return min(previousValue, abs(currentValue - col3b[index]))
+        //return max(previousValue,abs(currentValue - col3b[index]))
+        //return min(previousValue, abs(currentValue - col3b[index]))
     }, 0)
 }
 
 function isInTheCluster(cl, color) {
-    console.assert(typeof(color) == "array", color)
-    console.assert(typeof(cl) == "object", cl)
+    console.assert(typeof (color) == "array", color)
+    console.assert(typeof (cl) == "object", cl)
     for (let col in cl) {
         if (isInSameCluster(str2col3(col), color)) return true
     }
     return false
-        //  return getNearestColors(col3).some(function(col){return cl.hasOwnProperty(col32str(col))})
+    //  return getNearestColors(col3).some(function(col){return cl.hasOwnProperty(col32str(col))})
 }
 
 var need_clusterize_tc = true
@@ -261,25 +261,25 @@ function clusterize_tipical_center(targetCluster) {
 
 
     console.log("before: " + targetCluster.length)
-    Object.keys(targetCluster.colors).sort().forEach(function(colst) {
-            if (isInSameCluster(str2col3(colstr), str2col3(colst))) {
-                //            cluster.colors[colst] = colorClusters[0][colst]
-                cluster.setColor(colst, targetCluster.getColor(colst))
-            }
-        })
-        //メソッドにしたほうがいい。後でやる
-        // Object.keys(cluster).forEach(function(colst) {
-        //     delete colorClusters[0][colst]
-        // })
-        // console.log("after: " + Object.keys(colorClusters[0]).length + " + " + Object.keys(cluster).length)
-        //
-        // if (Object.keys(colorClusters[0]).length == 0) {
-        //     need_clusterize_tc = false
-        //     colorClusters.shift()
-        // }
-        // colorClusters.push(cluster)
-        // //console.log("clustering completed: " + colorClusters.length + ", pixx:" + pixcount)
-        // return need_clusterize_tc
+    Object.keys(targetCluster.colors).sort().forEach(function (colst) {
+        if (isInSameCluster(str2col3(colstr), str2col3(colst))) {
+            //            cluster.colors[colst] = colorClusters[0][colst]
+            cluster.setColor(colst, targetCluster.getColor(colst))
+        }
+    })
+    //メソッドにしたほうがいい。後でやる
+    // Object.keys(cluster).forEach(function(colst) {
+    //     delete colorClusters[0][colst]
+    // })
+    // console.log("after: " + Object.keys(colorClusters[0]).length + " + " + Object.keys(cluster).length)
+    //
+    // if (Object.keys(colorClusters[0]).length == 0) {
+    //     need_clusterize_tc = false
+    //     colorClusters.shift()
+    // }
+    // colorClusters.push(cluster)
+    // //console.log("clustering completed: " + colorClusters.length + ", pixx:" + pixcount)
+    // return need_clusterize_tc
 }
 
 
@@ -287,8 +287,8 @@ function clusterize_tipical_center(targetCluster) {
 function clusterize_devider(cluster) {
     var ret_arr = new Array()
     console.log("B:clusterize_devider :")
-        // 各辺4分割、計64個仕様
-        //まずは作業用のお部屋を準備
+    // 各辺4分割、計64個仕様
+    //まずは作業用のお部屋を準備
     var ldv = 2
     var dv = Math.pow(2, ldv)
     var divider = new ColorCluster()
@@ -297,15 +297,14 @@ function clusterize_devider(cluster) {
     }
     // メッシュに振り分け
     // Object のキー自体にメッシュの位置情報を埋め込むことで振り分けを実現
-    cluster.forEach(function(colst) {
+    cluster.forEach(function (colst) {
         var colst_div = unhex(colst.slice(0, 6)) & 0xC0C0C0
         divider[colst_div].setColor(colst, cluster.getColor(colst))
-            //console.log("仕分け中: "+colst_div)
+        //console.log("仕分け中: "+colst_div)
     })
 
-
     // メッシュ毎の存在するオブジェクトをまとめる
-    Object.keys(divider).forEach(function(colst_div) {
+    Object.keys(divider).forEach(function (colst_div) {
         console.log("c:" + hex(Number(colst_div)) + ", s:" + Object.keys(divider[colst_div]).length)
         if (divider[colst_div].length > 0) {
             ret_arr.push(divider[colst_div])
@@ -320,15 +319,16 @@ function clusterize_detail_top(cluster) {
     // 関数化とClusterObj対応は後である
     console.log("B:clusterize_detail_top: " + Object.keys(colorClusters[0]).length)
     var temp_cl = new Array()
-    cluster.forEach(function(colst) {
+    cluster.forEach(function (colst) {
+        // colstを含クラスターを洗い出し
         var incl_icl = new Array()
-        temp_cl.forEach(function(cl, i) {
-                if (cl.isInTheCluster(str2col3(colst))) {
-                    incl_icl.push(i)
-                }
-            })
-            //console.log(temp_cl)
-            //console.log(incl_icl)
+        temp_cl.forEach(function (cl, i) {
+            if (cl.isInTheCluster(str2col3(colst))) {
+                incl_icl.push(i)
+            }
+        })
+        //console.log(temp_cl)
+        //console.log(incl_icl)
         var o
         if (incl_icl.length == 0) {
             o = new ColorCluster()
@@ -336,14 +336,14 @@ function clusterize_detail_top(cluster) {
             o = temp_cl[incl_icl[0]]
         } else if (incl_icl.length > 1) {
             // 複数ある場合はクラスタを合成
-            var o = incl_icl.reduce(function(previousValue, currentValue, index, array) {
+            var o = incl_icl.reduce(function (previousValue, currentValue, index, array) {
                 // クラスタのコピー
-                temp_cl[currentValue].forEach(function(colstr) {
+                temp_cl[currentValue].forEach(function (colstr) {
                     previousValue.setColor(colstr, temp_cl[currentValue].getColor(colstr))
                 })
                 return previousValue
             }, new ColorCluster())
-            temp_cl = temp_cl.filter(function(cl, i) {
+            temp_cl = temp_cl.filter(function (cl, i) {
                 return !incl_icl.includes(i)
             })
         }
@@ -351,7 +351,7 @@ function clusterize_detail_top(cluster) {
         temp_cl.push(o)
     })
     console.log(temp_cl)
-    temp_cl.forEach(function(cl) {
+    temp_cl.forEach(function (cl) {
         colorClusters.push(cl)
     })
     colorClusters.shift()
@@ -359,18 +359,18 @@ function clusterize_detail_top(cluster) {
 }
 
 function drawCluster(dw) {
-    colorClusters.forEach(function(cluster, i) {
-            var count = dw + 10;
-            for (let colst in cluster.colors) {
-                if (cluster.colors.hasOwnProperty(colst)) {
-                    stroke("#" + colst)
-                    line(i * 5, count, i * 5 + 4, count)
-                    count++;
-                }
+    colorClusters.forEach(function (cluster, i) {
+        var count = dw + 10;
+        for (let colst in cluster.colors) {
+            if (cluster.colors.hasOwnProperty(colst)) {
+                stroke("#" + colst)
+                line(i * 5, count, i * 5 + 4, count)
+                count++;
             }
-        })
-        //clusterize_detail_top()
-        //clusterize()
+        }
+    })
+    //clusterize_detail_top()
+    //clusterize()
 }
 
 var ct
@@ -379,62 +379,56 @@ var ppa
 
 function drawAccumH(dw) {
     if (dw == 0) return
-        // console.log("B:drawAccumH dw:" + dw)
+    // console.log("B:drawAccumH dw:" + dw)
 
-    var pixel_width = c.width * displayDensity() * 2 //なぜが2倍するとうまくいくが？?
     var dwt = dw * displayDensity()
 
     // 画面の絵を水平方向にaccumulation
-    loadPixels()
     var accum = new Array(dwt)
-    var pixcount = 0
-    for (let l = 0; l < dwt; l++) {
-        //console.log("count: "+pixcount)
-        // alpha==0のものは色計算に影響を与えないように別途席を確保
-        accum[l] = new ColorCluster({
-            "00000000": 0
-        })
-        for (let i = l * pixel_width * 4; i < (l * pixel_width + dwt) * 4; i += 4) {
-            pixcount++
+    canvasForEachPx(
+        function (canvas_rgba, i, l, pixcount,pixel_width) {
             var colst = "00000000"
-            if (pixels[i + 3] != 0) {
+            if (pixels[l * pixel_width * 4 + i + 3] != 0) {
                 //colst = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
                 // とりあえず色のカウントに集中
                 colst = color2str([0, 0, 0, 255])
             }
             accum[l].addColor(colst)
-        }
-    }
-    //console.log(accum)
+        },
+        function (l) {
+            // alpha==0のものは色計算に影響を与えないように別途席を確保
+            accum[l] = new ColorCluster({
+                "00000000": 0
+            })
+        }, 0, 0, dwt, dwt)
+
     // 続いて積算した値を列画像としてctに追加
     if (!ct) {
         ct = createImage(dw, dw)
-            // 反映されないのか、、?
-        ct._pixelDensity = displayDensity() //*2
+        // 反映されないのか、、?
+        ct._pixelDensity = displayDensity()
     }
-    ct.loadPixels()
-    for (let l = 0; l < dwt; l++) {
+    forEachPx(ct, 0, function (pxs, l) {
         var i = l * dwt * 4
-        ct.pixels.copyWithin(i + 4, i, i + dwt * 4 - 4)
-            //    var col4 = str2col4(getClsMostFQCol(accum[l]))
+        pxs.copyWithin(i + 4, i, i + dwt * 4 - 4)
+        //    var col4 = str2col4(getClsMostFQCol(accum[l]))
 
         accum[l] = accum[l].getAverageCol()[3]
 
-        // ct.pixels[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
-        // ct.pixels[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
-        // ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
-        ct.pixels[i + 2] = ct.pixels[i + 1] = ct.pixels[i + 0] = ppa ? (128 - (ppa[l] - accum[l]) * 2) : 255 //一階差分
-            //ct.pixels[i + 1] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
-        ct.pixels[i + 3] = 255
-    }
-    ct.updatePixels()
+        // pxs[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
+        // pxs[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
+        // pxs[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
+        pxs[i + 2] = pxs[i + 1] = pxs[i + 0] = ppa ? (128 - (ppa[l] - accum[l]) * 2) : 255 //一階差分
+        //pxs[i + 1] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
+        pxs[i + 3] = 255
+    })
 
-    ppa = pa
+    ppa = pa;
     pa = accum
 
     // 描画
     image(ct, dw, 0) //,dw/displayDensity(),dw/displayDensity()
-        // console.log("E:drawAccumH")
+    // console.log("E:drawAccumH")
 }
 
 function draw() {
@@ -451,8 +445,8 @@ function draw() {
         image(img_p, -dw / 2, -dh / 2, dw, dh);
         //    filter(POSTERIZE,3);
         pop()
-        drawCluster(dd)
         drawAccumH(dd)
+        drawCluster(dd)
 
     } else {
         fill(100);
