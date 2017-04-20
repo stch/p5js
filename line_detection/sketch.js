@@ -423,8 +423,16 @@ function drawAccumH(dw) {
         // ct.pixels[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
         // ct.pixels[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
         // ct.pixels[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
-        ct.pixels[i + 2] = ct.pixels[i + 1] = ct.pixels[i + 0] = ppa ? (128 - (ppa[l] - accum[l]) * 2) : 255 //一階差分
-            //ct.pixels[i + 1] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
+		if(ppa){
+			var x = ppa[l]-accum[l]+((accum[l-1]?ppa[l-1]-accum[l-1]:0)+(accum[l+1]?ppa[l+1]-accum[l+1].getAverageCol()[3]:0))/sqrt(2)
+			var y = (pa[l+1]&&pa[l-1])?(pa[l+1]-pa[l-1]+(ppa[l+1]-ppa[l-1]+accum[l+1].getAverageCol()[3]-accum[l-1])/sqrt(2)):0
+			var ab = sqrt(x*x+y*y)
+			var hlsa = ab>0?p5.ColorConversion._hslaToRGBA([acos(x/ab)/TWO_PI+(y<0.0?0.5:0.0),ab/255.0,0.5,255]):[66,66,66]
+			ct.pixels[i + 0] = hlsa[0]*255.0
+			ct.pixels[i + 1] = hlsa[1]*255.0
+			ct.pixels[i + 2] = hlsa[2]*255.0
+		}
+        //ct.pixels[i + 1] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
         ct.pixels[i + 3] = 255
     }
     ct.updatePixels()
