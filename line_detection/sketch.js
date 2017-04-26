@@ -391,7 +391,7 @@ function drawAccumH(dw) {
             if (pixels[l * pixel_width * 4 + i + 3] != 0) {
                 //colst = color2str([pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]])
                 // とりあえず色のカウントに集中
-                colst = color2str([0, 0, 0, 255])
+                colst = color2str([88, 99, 66, 255])
             }
             accum[l].addColor(colst)
         },
@@ -408,6 +408,7 @@ function drawAccumH(dw) {
         // 反映されないのか、、?
         ct._pixelDensity = displayDensity()
     }
+
     forEachPx(ct, 0, function (pxs, l) {
         var i = l * dwt * 4
         pxs.copyWithin(i + 4, i, i + dwt * 4 - 4)
@@ -415,25 +416,38 @@ function drawAccumH(dw) {
 
         accum[l] = accum[l].getAverageCol()[3]
 
-        // pxs[i + 0] = ppa? (128 - pa[l]/2) : 255 //元の値
-        // pxs[i + 1] = ppa? (128 - (ppa[l]-accum[l])*2) : 255 //一階差分
-        // pxs[i + 2] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
+        stroke(0)
+        line(0,l,2*(accum[l]-(accum[l-1]||0))/2.55,l)
+//        line(0,l,3*(accum[l]-2*(accum[l-1]||0)+(accum[l-2]||0))/2.55,l)
+
+        var rgba = [0.5,0.5,0.5,255]
 		if(ppa){
-			var x = ppa[l]-accum[l]+((accum[l-1]?ppa[l-1]-accum[l-1]:0)+(accum[l+1]?ppa[l+1]-accum[l+1].getAverageCol()[3]:0))/sqrt(2)
-			var y = (pa[l+1]&&pa[l-1])?(pa[l+1]-pa[l-1]+(ppa[l+1]-ppa[l-1]+accum[l+1].getAverageCol()[3]-accum[l-1])/sqrt(2)):0
-			var ab = sqrt(x*x+y*y)
-			var hlsa = ab>0?p5.ColorConversion._hslaToRGBA([acos(x/ab)/TWO_PI+(y<0.0?0.5:0.0),ab/255.0,0.5,255]):[66,66,66]
-			pxs[i + 0] = hlsa[0]*255.0
-			pxs[i + 1] = hlsa[1]*255.0
-			pxs[i + 2] = hlsa[2]*255.0
+            // pxs[i + 0] = 128 - pa[l]/2 //元の値
+            // pxs[i + 1] = 128 - (ppa[l]-accum[l])*2 //一階差分
+            // pxs[i + 2] = 128 - (ppa[l]-2*pa[l]+accum[l])*2 // 二階差分
+
+			// var ddx = ppa[l]-accum[l]+((accum[l-1]?ppa[l-1]-accum[l-1]:0)+(accum[l+1]?ppa[l+1]-accum[l+1].getAverageCol()[3]:0))/sqrt(2)
+			// var ddy = (pa[l+1]&&pa[l-1])?(pa[l+1]-pa[l-1]+(ppa[l+1]-ppa[l-1]+accum[l+1].getAverageCol()[3]-accum[l-1])/sqrt(2)):0
+			// var ddr = sqrt(ddx*ddx+ddy*ddy)
+			// var hlsa = ddr>0?p5.ColorConversion._hslaToRGBA([acos(ddx/ddr)/TWO_PI+(ddy<0.0?0.5:0.0),ddr/255.0,0.5,255]):[66,66,66]
+            //rgba = p5.ColorConversion._hslaToRGBA([0.5 - (ppa[l]-accum[l])/127.0,accum[l]/255.0,0.5,255])
 		}
+        if(1<l){
+            //rgba = p5.ColorConversion._hslaToRGBA([0.5 - (accum[l-2]-accum[l])/127.0,accum[l-1]/255.0,0.5,255])
+            rgba = p5.ColorConversion._hslaToRGBA([accum[l-1]/255.0,0.5+(accum[l-2]+accum[l]-accum[l-1]*2)/40.0,0.5,255])
+        }
         //pxs[i + 1] = ppa? (128 - (ppa[l]-2*pa[l]+accum[l])*2) : 255 // 二階差分
-        pxs[i + 3] = 255
+        pxs[i + 0] = rgba[0]*255.0
+		pxs[i + 1] = rgba[1]*255.0	
+        pxs[i + 2] = rgba[2]*255.0
+        pxs[i + 3] = 255//accum[l]
+
+
 	})
 	ppa = pa;
 	pa = accum
     // 描画
-    image(ct, dw, 0) //,dw/displayDensity(),dw/displayDensity()
+    image(ct, 100, 0) //,dw/displayDensity(),dw/displayDensity()
     // console.log("E:drawAccumH")
 }
 var rot
@@ -446,14 +460,23 @@ function draw() {
 		var dw = img_p.width// /2
 		var dh = img_p.height// /2
 		var dd = sqrt(Math.pow(dw, 2) + Math.pow(dh, 2))
+
 		push()
 		translate(dd / 2, dd / 2)
 		rotate(TWO_PI * rot)
 		image(img_p, -dw / 2, -dh / 2,dw, dh);
 		//    filter(POSTERIZE,3);
 		pop()
+
+        push()
+        translate(dd,0)
 		drawAccumH(dd)
-		drawCluster(dd)
+        pop()
+
+        push()
+        translate(dd,0)
+        drawCluster(dd)
+        pop()
 		// push()
 		// 	translate(dd / 2, dd / 2)
 		// 	for(let r = 0; r < 180; r++ ){
